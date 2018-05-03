@@ -6,7 +6,7 @@ public class WorkerThread implements Runnable {
 	private CustomQueue<Runnable> taskQueue;
 
 	public WorkerThread(CustomQueue<Runnable> customBlockingQueue) {
-		this.taskQueue = customBlockingQueue;
+		taskQueue = customBlockingQueue;
 	}
 
 	public void run(){

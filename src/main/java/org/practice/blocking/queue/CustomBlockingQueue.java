@@ -1,6 +1,9 @@
 package org.practice.blocking.queue;
 
 import java.util.Arrays;
+import java.util.PriorityQueue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
@@ -30,21 +33,22 @@ public class CustomBlockingQueue<E> implements CustomQueue<E> {
 	
 	public void enQueue(E data) {
 		try{
-			lock.tryLock();
-			if(isFull()){
-				try {
-					QUEUE_FULL.await();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
+			if(lock.tryLock()) {
+				if (isFull()) {
+					try {
+						QUEUE_FULL.await();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				} else {
+					rear = (rear + 1) % size;
+					array[rear] = data;
+					if (front == -1)
+						front = rear;
+					QUEUE_EMPTY.signalAll();
 				}
-			}else{
-				rear = (rear+1)%size;
-				array[rear] = data;
-				if(front == -1)
-					front = rear;
-				QUEUE_EMPTY.signalAll();
+				count++;
 			}
-			count++;
 		}finally{
 			if (((ReentrantLock) lock).isHeldByCurrentThread()) {
 				lock.unlock();
@@ -61,23 +65,25 @@ public class CustomBlockingQueue<E> implements CustomQueue<E> {
 	public E deQueue() {
 		E data = null;
 		try {
-			lock.tryLock();
-			if(isEmpty()){
-				try {
-					QUEUE_EMPTY.await();
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
-			}else{
-				data = (E) array[front];
-				if(front == rear){
-					front = rear = -1;
+			if(lock.tryLock()){
+				if(isEmpty()){
+					try {
+						QUEUE_EMPTY.await();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
 				}else{
-					front = (front+1)%size;
+					System.out.println("Front : " + front);
+					data = (E) array[front];
+					if(front == rear){
+						front = rear = -1;
+					}else{
+						front = (front+1)%size;
+					}
+					QUEUE_FULL.signalAll();
 				}
-				QUEUE_FULL.signalAll();
+				count--;
 			}
-			count--;
 		} finally {
 			if (((ReentrantLock) lock).isHeldByCurrentThread()) {
 				lock.unlock();
@@ -88,7 +94,8 @@ public class CustomBlockingQueue<E> implements CustomQueue<E> {
 	}
 
 	private boolean isEmpty() {
-		return (count == 0);
+		System.out.println("Queue count : " + count);
+		return (count == 0 || front == -1 || rear == -1);
 	}
 
 	public int getSize(){
