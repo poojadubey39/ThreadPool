@@ -11,7 +11,7 @@ public class ThreadPoolExecutor {
 	
 	public ThreadPoolExecutor(int maxThreadCount) {
 		customBlockingQueue = new CustomBlockingQueue<Runnable>(maxThreadCount);
-		this.maxThreadCount = maxThreadCount;
+		ThreadPoolExecutor.maxThreadCount = maxThreadCount;
 	}
 
 
